@@ -6,9 +6,9 @@ try {
   //const kafkaHost = process.env.KAFKA_HOST;
   //console.log (kafkaHost);
   const Producer = kafka.Producer;
-  const client = new kafka.KafkaClient({kafkaHost:"192.168.1.44:30036"});
-  const producer = new Producer(client);
-  const kafka_topic = 'test1';
+  var client;
+  var producer ;
+  const kafka_topic = 'test2';
   console.log(kafka_topic);
   let payloads = [
     {
@@ -16,6 +16,32 @@ try {
       messages: config.kafka_topic
     }
   ];
+
+  const closeCB = function (){
+    init();    
+  }
+
+  const readyCB = function (){
+    console.log("broker ready");
+    setInterval(request, 1000);
+
+  };
+
+  const  errorCB= function(err){
+    console.log(err);
+    console.log('[kafka-producer -> '+kafka_topic+']: connection errored');
+    producer.close(closeCB)
+  }
+
+  function init(){
+    client = new kafka.KafkaClient({kafkaHost:"10.100.102.156:9092"});
+    producer = new Producer(client);
+    producer.on('ready', readyCB);
+    producer.on('error',errorCB);
+
+  }
+
+
   
   function request() {
     producer.send(payloads, (err, data) => {
@@ -28,18 +54,10 @@ try {
       }
     });
   }
+  
+  
 
-  producer.on('ready', function() {
-    console.log("broker ready");
-    setInterval(request, 1000);
-    
-  });
-
-  producer.on('error', function(err) {
-    console.log(err);
-    console.log('[kafka-producer -> '+kafka_topic+']: connection errored');
-    throw err;
-  });
+  init();
 }
 catch(e) {
   console.log(e);

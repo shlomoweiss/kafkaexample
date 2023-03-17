@@ -3,7 +3,7 @@ const kafka = require('kafka-node');
 
 
 try {
-  const kafkaHost = process.env.KAFKA_HOST;
+  const kafkaHost = "10.100.102.156:9092";
   console.log (kafkaHost);
   var options = {
     kafkaHost: kafkaHost, // connect directly to kafka broker (instantiates a KafkaClient)
@@ -28,43 +28,35 @@ try {
   };
 
   console.log("grup id:"+ options.groupId);
-  var consumerGroup = new kafka.ConsumerGroup(options, 'test1');
+  var consumerGroup ;
   //consumerGroup.pause();
   //consumerGroup.setOffset("test1", 0, 0);
   //consumerGroup.resume();
-  var offset = new kafka.Offset(consumerGroup.client );
-  var part = 0;
-  console.log("create offset  object");
-  offset.fetchCommits(options.groupId, [
-    { topic: 'test1', partition: 0 }
-  ], function (err, data) {
-           if (err){
-                console.log("failld fetch offset");
-            }else{
-                  console.log(" offset is " + JSON.stringify(data));
-              part = data['test1']['0'];
-              console.log("part ="+ part);
-           }
-           //offset.commit(options.groupId, [{ topic: "test1", partition: 0, offset: -1}],(err,datat)=>{
-               // if (err) logger.error("error", err);
-                consumerGroup.on('message', function(message) {
-                  console.log('here');
-                  console.log(
-                    'kafka-> ',
-                    JSON.stringify(message)
-                  );
-                  this.commit(false,error=>{console.log(" commit +" ,error);});
-                });
+ 
+  function init() {
+    console.log("ini init=========");
+    consumerGroup = new kafka.ConsumerGroup(options, 'test2');
+    consumerGroup.on('message', function(message) {
+  
+      console.log(
+        'kafka-> ',
+        JSON.stringify(message)
+      );
+      this.commit(false,error=>{console.log(" commit +" ,error);});
+    });
+      consumerGroup.on('error', function(err) {
+         console.log('error^^^^^^^^^^^^^^^^^^^^^^', err);
+         consumerGroup.generationId = null;
+         consumerGroup.close(false,function (){})
+         init();
+        
+      });  
       
-                consumerGroup.on('error', function(err) {
-                  console.log('error', err);
-                });  
-           //});
-           
-      });
-  
-  
-}
-catch(e) {
-  console.log(e);
-}
+
+  }
+  init();
+
+
+}catch(e) {
+  init()
+}  
